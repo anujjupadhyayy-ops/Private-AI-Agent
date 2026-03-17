@@ -1,0 +1,33 @@
+# Secrets — never commit these
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Database — contains private conversations
+memory.db
+
+# Vector store — rebuilt by running ingest.py
+vectorstore/
+
+# Your private documents — CV, finances, etc
+documents/
+
+# Logs
+logs/
+*.log
+
+# Mac system files
+.DS_Store
+
+# Output Files
+/outputs/
+
+# Tauri compiled output — large binary
+src-tauri/target/
+
+# Git
+.git/

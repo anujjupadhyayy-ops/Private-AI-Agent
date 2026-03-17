@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+
+  # ── Your Python Application ──────────────────────────────
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount local folders into container
+      # Changes to these folders are reflected immediately
+      - ./documents:/app/documents
+      - ./outputs:/app/outputs
+      - ./vectorstore:/app/vectorstore
+      - ./.env:/app/.env
+    environment:
+      # Override Ollama URL to use the ollama container
+      # 'ollama' is the service name — Docker resolves it automatically
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - POSTGRES_URL=postgresql://privateai_user:${POSTGRES_PASSWORD}@postgres:5432/privateai
+
+    depends_on:
+      - ollama
+      - postgres
+    restart: unless-stopped
+
+  # ── Ollama AI Server ─────────────────────────────────────
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      # Persist downloaded models between container restarts
+      # Without this, models redownload every time
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # ── PostgreSQL Database ──────────────────────────────────
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: privateai
+      POSTGRES_USER: privateai_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist database between container restarts
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+# ── Named Volumes ─────────────────────────────────────────
+# Docker manages these — they persist even when containers stop
+volumes:
+  ollama_data:
+  postgres_data:
