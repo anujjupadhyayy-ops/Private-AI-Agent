@@ -1,18 +1,17 @@
 # Tech Stack — Prerequisite Understanding
 
-> *"Before you look at any of the code in this repo, read this. I spent three weeks understanding every layer. This document is what I wish someone had given me at the start."*
+> *"Before you look at any of the code in this repo, read this. I spent two weeks understanding and building every layer."*
 > 
-> — Anuj Upadhyay, March 2026 · Apple Silicon · Local AI · Privacy First
+> — Anuj Upadhyay, March 2026 · Infra - Apple Silicon (M4) · Local AI Agent (Privacy & Customisation focused)
 
 ---
 
 ## Why This Document Exists
 
-I built this because I wanted to understand what an AI agent actually is — not at the "call the OpenAI API" level, but at the infrastructure level. What runs the model? How does it find relevant information? How do tools get called? How does memory work? How does a chat interface become a native app?
+I built this because I wanted to understand each layer involved in building an AI agent. I wanted to move beyond simply calling the "OpenAI API" level; I believe to truly build / manage something you need to understand how it works, for me it was to understand each layer involved from infrastructure level to the application level. 
+What runs the model? How does it find relevant information? How do tools get called? How does memory work? How does a chat interface become a native app?
 
-Every technology in this stack was chosen deliberately. Not because it was the most popular, not because a YouTube tutorial used it, but because it was the right tool for the specific job it needed to do. This document explains each one — what it is, what problem it solves, why I chose it over the alternatives, and most importantly, when you should and shouldn't use it.
-
-The honest version. Not the marketing version.
+Every technology in this stack was chosen deliberately. Not because it was the most popular, but to build something using that is available in the market to learners like me, and understand the impact of it in real time, that's how we can best learn. This document explains each one — what it is, what problem it solves, why I chose it over the alternatives, and most importantly, when you should and shouldn't use it.
 
 ---
 
@@ -42,17 +41,15 @@ The honest version. Not the marketing version.
 
 When people say they're "using AI", they usually mean they're sending text to a server somewhere — OpenAI's, Anthropic's, Google's. The model runs on their hardware, their costs, their terms. You're renting intelligence.
 
-Ollama is different. It's a local server that downloads open-source AI models and runs them entirely on your own hardware. It starts when your Mac starts, sits quietly in the menu bar, and exposes a simple API at `localhost:11434`. When your agent needs to think, it sends a request to that local address. The model runs on your processor. Nothing goes anywhere.
+Ollama is different. It's a local server that downloads open-source AI models and runs them entirely on your own hardware. It starts when your Mac starts, sits quietly in the menu bar, and exposes a simple API at `localhost:11434`. When your agent needs to think, it sends a request to that local address. The model runs on your processor. No data leaves your system, no cost to run an agent. 
 
-> **The simple explanation:** Ollama is like running your own private OpenAI server on your Mac. Same concept — you send it a message, it sends back a response. The difference is it never leaves your machine.
+Ollama is like running your own private OpenAI server on your Mac. Same concept — you send it a message, it sends back a response. The difference is it never leaves your machine.
 
-On Apple Silicon (M1/M2/M3/M4), Ollama uses the Neural Engine and unified memory architecture specifically. The M-series chips were designed for this kind of workload — running AI inference locally is something they do exceptionally well compared to Intel or AMD chips of equivalent power consumption.
-
-The models themselves are large files — Mistral 7B is about 4GB, LLaMA 3.1 8B is about 5GB. They live in `~/.ollama/models` on your Mac. You pull them once with `ollama pull modelname` and they stay there.
+For my setup I explored different reasoning and embedding models — Mistral 7B, LLaMA 3.1/LLaMA 3.2. These are small size LLMs so come with their own limitations, but the fact that they run locally with zero setup is a game-changer for personal AI agents. The trade-off is that they don't have the same reasoning quality as GPT-4o or Claude 3.5 Sonnet — but for many use cases, especially when privacy is a concern, it's worth it.
 
 **Use Ollama when:** Privacy is non-negotiable. Legal documents, personal finances, anything you wouldn't paste into ChatGPT. Medical records. Client data. Anything under NDA.
 
-**Consider cloud APIs when:** You need the best reasoning quality and privacy is less critical. GPT-4o and Claude 3.5 Sonnet outperform any 7B model running locally. The trade-off is real — better model, less privacy.
+You can also use Claude or GPT models with Ollama if you have API keys, but the point of Ollama is to avoid that dependency. The models I used in this project are all open-source and run entirely locally.
 
 **What Ollama does in this project:**
 - `mistral` — the main reasoning model. Reads your questions, decides which tools to call, writes the final response
@@ -70,21 +67,19 @@ LangGraph is what turns a language model into an agent. It implements the ReAct 
 
 > **The ReAct loop in plain English:**
 > 
-> You ask: *"What did I spend on Kokilaben Hospital?"*
+> You ask: *"What did I spend on Hospital bills?"*
 > 
 > Agent thinks: *"This is a financial question about an Excel file. I should call query_excel."*
 > 
-> Agent calls: `query_excel("Mummy_Medical_Expenses.xlsx", "Kokilaben")`
+> Agent calls: `query_excel("Medical_Expenses.xlsx", "Hospital")`
 > 
 > Agent reads result: *[gets back the raw cell data from the spreadsheet]*
 > 
 > Agent thinks: *"I have the data. I can answer now."*
 > 
-> Agent responds: *"The total spent on Kokilaben Hospital was ₹95,530..."*
+> Agent responds: *"The total spent on Hospital bills was ₹95,530..."*
 
 The `create_react_agent` function in LangGraph handles all of this. You hand it the model, the list of tools, and a system prompt. It manages the loop, the tool call formatting, the context window, and the message history internally. Without it, you'd write several hundred lines of state management code to achieve the same thing.
-
-LangGraph replaced the older LangChain `AgentExecutor` in version 1.0. The main difference is LangGraph treats the agent as a graph of states rather than a linear chain — more flexible and significantly more reliable for complex multi-step reasoning.
 
 **Use LangGraph when:**
 - You need an agent that can call multiple tools in sequence based on what it finds
@@ -100,9 +95,7 @@ LangGraph replaced the older LangChain `AgentExecutor` in version 1.0. The main 
 
 A regular database stores text as text. If you search for "payment terms" it finds rows containing those exact words. Useful — but limited. What if the document says "when funds are due" instead? A keyword search misses it entirely.
 
-ChromaDB is a vector database. Instead of storing text as text, it stores text as vectors — lists of numbers (usually 768 of them) that represent the *meaning* of the text in mathematical space. Two pieces of text with similar meaning have vectors that are close together in that space, even if they share no words.
-
-This is why when you ask "when does money change hands?" it finds the contract clause about payment terms. The meaning is similar. The words are different. ChromaDB finds meaning, not keywords.
+ChromaDB is a vector database. Instead of storing text as text, it stores text as vectors/chunks — lists of numbers (usually 768 of them) that represent the *meaning* of the text in mathematical space. Two pieces of text with similar meaning have vectors that are close together in that space, even if they share no words. ChromaDB finds meaning, not keywords.
 
 > **The analogy that actually makes sense:** Imagine a library where every book is filed not by title or author, but by what it *means*. All books about heartbreak are shelved near each other, regardless of genre, language, or publication date. ChromaDB is that library. Your questions and your documents are all filed by meaning — so the search always finds what's relevant, not just what matches.
 
@@ -110,17 +103,15 @@ In this project, ChromaDB stores three separate collections — `personal_docs`,
 
 **ChromaDB strengths:** Zero setup. Runs as a library, persists to a folder on disk. Perfect for local apps. Fast for collections under a few million documents. Simple Python API.
 
-**When to consider alternatives:** At scale. Millions of documents, multiple concurrent users — look at Pinecone (cloud) or Weaviate (self-hosted). ChromaDB is a local development tool first.
-
 ---
 
 ## 4. RAG — The Most Important Concept
 
 **Not a tool — a pattern. The most important concept in applied AI right now.**
 
-RAG is not a library or a tool — it's a pattern. Understanding it properly is what separates people who build useful AI systems from people who build impressive demos that don't actually work.
+RAG is not a library or a tool — it's a pattern. It is one of the core concepts of creating an AI Agent and how an agent thinks. Without RAG, your agent might have the best model in the world, but it will still hallucinate answers to questions about your specific documents. With RAG, you can ground the model's responses in real data.
 
-The problem RAG solves: language models are trained on data up to a certain date, and they've never seen your specific documents. Ask a model about your contract and it will make something up — because it has no way to know. This is called hallucination. It's not a bug, it's the model doing exactly what it was trained to do: produce plausible text.
+The problem RAG solves: language models are trained on data up to a certain date, and they've never seen your specific documents. When you ask a question about those documents, the model has to guess based on patterns it learned during training. It might get lucky and generate something that sounds plausible, but it's not actually reading your documents — it's making an educated guess based on its training data. That's hallucination.
 
 RAG solves this by finding the relevant parts of your documents *before* asking the model the question, and injecting them into the prompt. The model isn't guessing anymore — it's reading the actual source material and summarising it.
 
@@ -133,18 +124,13 @@ RAG solves this by finding the relevant parts of your documents *before* asking 
 > 5. The answer is grounded in your real data — not generated from thin air
 
 The quality of a RAG system depends on three things: the quality of the embedding model (how well it understands meaning), the chunking strategy (how you split documents before storing them), and the domain separation (making sure you only search relevant collections).
-
-> **The thing nobody tells you:** RAG retrieval working correctly and the model responding correctly are **two completely separate things.** You can have perfect retrieval — the right chunks, accurate content, correct domain — and still get a bad response if the model ignores the retrieved content and generates its own. This is a model behaviour problem, not a RAG problem. The way to diagnose it is to test retrieval directly, independently from the full agent.
-
 ---
 
 ## 5. FastAPI — The API Layer
 
 **Layer: HTTP interface · REST endpoints · Separation of concerns**
 
-In Stage 1 of this project, the Streamlit UI talks directly to the LangGraph agent in Python. That works for a single-user local app. The moment you want to connect a second interface — a mobile app, a different web UI, another service — you need a clean HTTP layer in between.
-
-FastAPI creates that layer. It's a Python framework that exposes your agent as HTTP endpoints. `POST /chat` — send a message, get a response. `GET /history` — retrieve conversation history. Any application that can make HTTP requests can now use your agent, regardless of what language it's written in.
+FastAPI is the bridge between your Python agent and the outside world. FastAPI creates a layer that exposes your agent as HTTP endpoints. `POST /chat` — send a message, get a response. `GET /history` — retrieve conversation history. Any application that can make HTTP requests can now use your agent, regardless of what language it's written in. 
 
 > **Why this matters architecturally:**
 > 
@@ -170,19 +156,15 @@ FastAPI was chosen over Flask because it's faster, has automatic API documentati
 
 **Layer: Python UI · Rapid prototyping · No frontend skills needed**
 
-Building a frontend is a completely separate skill from building a backend. HTML, CSS, JavaScript, React — it's a significant investment just to display a text box and some messages. Streamlit eliminates that entirely for Python developers.
-
-You write Python. `st.title()` renders a title. `st.chat_input()` renders the message box. `st.chat_message("user")` renders a chat bubble. Streamlit converts it to a web interface at `localhost:8501`. Change a line of Python, save the file, Streamlit reloads instantly.
+Building a frontend is a completely separate skill; With my limited coding experience (can envision / design systems), creating a fullblown frontend would have been a significant challenge. Streamlit eliminates that entirely — you write Python code that describes your interface, and Streamlit renders it as a web app.
 
 The real power of Streamlit for this project was speed. The entire chat interface — including login, sidebar, voice button, clear conversation, logout — took a few hours to build. With a traditional frontend that would have been several days minimum.
 
 > **The honest limitation:** Streamlit is a prototyping tool, not a production UI framework. You have limited control over styling, animations, and layout. If you want a polished product that looks like a real application rather than a data science dashboard, you'll eventually replace Streamlit with a proper frontend (React, Vue, or plain HTML/CSS/JS served by FastAPI). The agent code doesn't change — only the interface changes. That's the payoff of the FastAPI separation.
 
-**Streamlit is the right choice when:**
-- You need a working UI quickly to test your agent before worrying about polish
-- You're building internal tools where aesthetics matter less than functionality
-- The user base is small and technical — data scientists, developers, analysts
-- You want to iterate rapidly on the interface without a build pipeline
+**Streamlit was right for my project because:**
+- I needed a working UI quickly to test my agent before worrying about polish
+- I wanted to verify the tools, db, APIs, LLM interaction, etc were working as intended before investing time in a frontend refinement. 
 
 ---
 
@@ -230,45 +212,25 @@ Five tables — `messages`, `tool_calls`, `web_log`, `file_log`, `users`. Every 
 
 ---
 
-## 9. Docker — The Packaging
+## Integration - Bringing It All Together
 
-**Layer: Containerisation · Portable deployment · Reproducible environments**
+Understanding each technology individually is important to understand why you are doing something and its role in the overall architecture you are building. Understanding how they work together is what actually matters. Here's a small example of how a user question flows through the entire stack:
 
-Getting this project running on a new machine requires: installing Python, creating a virtual environment, installing all packages, installing Ollama, downloading models, setting up PostgreSQL, creating the database, configuring environment variables. Without Docker, that's an hour of setup and a dozen things that can go wrong differently on different machines.
-
-Docker packages your application and all its dependencies into containers — self-contained units that include everything needed to run. Someone receives your `docker-compose.yml`, runs `docker-compose up`, and the entire stack starts. Python, packages, PostgreSQL, Ollama — all of it. One command.
-
-> **The shipping container analogy:** Before shipping containers, loading a cargo ship was chaos — every item needed to be individually secured and handled differently. With containers, everything goes into a standard box. The crane doesn't care what's inside. The ship doesn't care. The destination port doesn't care. Docker does for software what shipping containers did for global trade.
-
-The `docker-compose.yml` in this project defines three containers — the Python app, PostgreSQL, and Ollama — and the network between them. They talk to each other by service name rather than IP address. `postgres` resolves to the PostgreSQL container. `ollama` resolves to the Ollama container. Each container is isolated and does one thing.
-
-**Docker becomes essential when:**
-- You want to deploy to a server someone else manages
-- You need to share your project and have it work on someone else's machine
-- You want environment consistency — production behaves exactly like development
-- You're building toward multi-tenant deployment where each customer gets their own isolated stack
-
----
-
-## How They All Work Together
-
-Understanding each technology individually is one thing. Understanding how they work together is what actually matters. Here's the full journey of a single message through every layer of this system:
-
-**You ask:** *"What did I spend on Kokilaben Hospital?"*
+**You ask:** *"What did I spend on XYZ Hospital?"*
 
 | Step | Layer | What happens |
 |---|---|---|
 | 1 | **Streamlit** | Captures your input. Calls `save_msg("user", prompt)` — message written to PostgreSQL immediately, before anything else |
 | 2 | **PostgreSQL** | `run_agent()` loads your last 15 messages — this is how the agent knows the context of your conversation |
-| 3 | **LangGraph + Ollama** | Full message history + SYSTEM_PROMPT sent to Mistral. Model reads the rules and decides: *"Financial question — call query_excel"* |
+| 3 | **LangGraph + Ollama** | Full message history + SYSTEM_PROMPT sent to Mistral/Llama 3.1/ 3,2 model. Model reads the rules and decides: *"Financial question — call query_excel"* |
 | 4 | **Tools + PostgreSQL** | `query_excel()` reads the Excel file, returns raw cell coordinates and values. Tool call logged to `tool_calls` table |
-| 5 | **Ollama** | Raw data fed back to Mistral. Model identifies Kokilaben rows, sums amounts, writes natural language response |
+| 5 | **Ollama** | Raw data fed back to Mistral. Model identifies XYZ Hospital rows, sums amounts, writes natural language response |
 | 6 | **Streamlit + PostgreSQL** | Response rendered in chat bubble. `save_msg("assistant", response)` writes to PostgreSQL. Conversation permanently stored |
 
-Every layer had a reason to exist. Ollama so the model runs locally. LangGraph so the reasoning loop is managed. ChromaDB so documents are semantically searchable. PostgreSQL so nothing is lost. Streamlit so there's an interface without building a frontend. Tauri so the interface feels native. Docker so any of this can be deployed anywhere.
+Every layer had a reason to exist. Ollama so the model runs locally. LangGraph so the reasoning loop is managed. ChromaDB so documents are semantically searchable. PostgreSQL so nothing is lost, each action is auditable, multiuser sessions are seperate and there is no spill between two conversations. Streamlit so there's an interface so I could get a quick frontend. Tauri so the interface feels native.
 
 ---
 
-*"The test of whether you understand a system isn't whether you can use it. It's whether you can explain why each part exists, what happens if you remove it, and when you'd choose something different. By the time I committed this code to GitHub, I could answer all three questions for every layer."*
+*"The idea to use AI agents confidently to build business applications / agents requires understanding each layer, its purpose, and how they interact. To drive efficiency and look at tech choices not from a "what's popular" perspective but from a "what's right for this specific use case" perspective, you need to understand the tradeoffs of each layer and how they impact the overall system. This is what I aimed to achieve with this project."*
 
 *— Anuj Upadhyay · March 2026*
