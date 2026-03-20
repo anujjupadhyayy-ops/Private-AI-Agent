@@ -14,7 +14,7 @@ This is not a wrapper around someone else's tool. Every layer was built, debugge
 
 | Layer | Technology | Why |
 |---|---|---|
-| AI Reasoning | Ollama + Mistral 7B | Local inference, no API key, swappable |
+| AI Reasoning | Ollama + Mistral 7B / Ollama 3.2 | Local inference, no API key, swappable |
 | Agent Framework | LangGraph + LangChain | ReAct loop, tool calling, model abstraction |
 | Document Search | ChromaDB + nomic-embed-text | Semantic vector search, local embeddings |
 | Memory & Audit | PostgreSQL | Persistent conversations, full audit trail |
