@@ -30,7 +30,7 @@ This is not a wrapper around someone else's tool. Every layer was built, debugge
 ```
 User Input
     ↓
-Streamlit UI (port 8501)
+Streamlit UI (port XXX)
     ↓
 LangGraph Agent (ReAct loop)
     ↓
@@ -45,7 +45,7 @@ Tool Registry ──────────────────────
     ├── list_folder       → private-ai folder (sandboxed)
     └── get_weather       → wttr.in (free, no key)
     ↓
-Ollama (localhost:11434) — Mistral 7B
+Ollama (localhost:11434) — Mistral 7B/Llama 3.1 or 3.2 (The architecture allows you to swap the reasoning model by making a simple change)
     ↓
 PostgreSQL — messages, tool_calls, web_log, file_log, users
 ```
@@ -61,13 +61,13 @@ PostgreSQL — messages, tool_calls, web_log, file_log, users
 - Private documents never included in web search queries
 
 **Document Intelligence (RAG)**
-- Three domain collections: `personal_docs`, `finance_docs`, `work_docs`
+- Three domain collections: `personal_docs`, `finance_docs`, `work_docs` (Domian Implementation - Useful for compartmentalising cross function areas)
 - Automatic domain detection from folder structure on ingest
-- Supports: PDF, Excel, Word, HTML, Markdown, CSV, JSON, code files, URLs
+- Supports: PDF, Excel, Word, HTML, CSV, JSON, URLs
 - nomic-embed-text embeddings via Ollama — no external embedding API
 
 **Multi-User Authentication**
-- bcrypt password hashing — deliberately slow, brute-force resistant
+- bcrypt password hashing — deliberately slow, brute-force resistant (For Security, other encryption techniques available if of interest)
 - Per-user session isolation — conversation history never crosses users
 - Role-based access (admin/user)
 - CLI user management tool
@@ -222,7 +222,7 @@ PMS_BASE_URL=http://localhost:3000/api/v1
 
 ---
 
-## What I Learned
+## Outcomes Achieved
 
 Building this from scratch — not following a tutorial, not using a pre-built tool — taught me:
 
@@ -242,30 +242,12 @@ Building this from scratch — not following a tutorial, not using a pre-built t
 
 | Limitation | Root Cause | Solution |
 |---|---|---|
-| Inconsistent tool calling | 7B model size | GPT-4o / Claude 3.5 via API, or llama3.1:70b on GPU hardware |
+| Inconsistent tool calling | 7B / Llama 3.2 model size | GPT-4o / Claude 3.5 via API, or llama3.1:70b on GPU hardware |
 | Model hallucinates | Same | Better models, stricter SYSTEM_PROMPT, output validation layer |
 | Voice not in Docker | ffmpeg path in container | Mount Mac audio device or use cloud STT |
 | Single user session ID | Hardcoded "main" for local | S3.2 login system already built — connect session_id to user.id |
 
 ---
 
-## Roadmap
-
-- [ ] Connect session_id to authenticated user in local mode
-- [ ] Add output validation — reject responses that contain placeholders
-- [ ] Upgrade to llama3.1:70b or GPT-4o API for reliable tool calling
-- [ ] Add scheduled automations via n8n
-- [ ] Add text-to-speech for voice responses (Coqui TTS — local)
-- [ ] Multi-tenant isolation for team deployment
-- [ ] Stripe billing hooks connected to tool_calls audit table
-
----
-
-## License
-
-MIT — use it, extend it, build on it.
-
----
-
 *Built by Anuj Upadhyay — March 2026*
-*Apple Silicon M-series · Python 3.12 · LangGraph 1.0 · Ollama 0.18*
+Local | Private | Secure - Python 3.12 · LangGraph 1.0 · Ollama 0.18
