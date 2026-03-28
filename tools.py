@@ -196,8 +196,8 @@ def query_knowledge(question: str, domain: str = "work") -> str:
 
 @tool
 def fetch_from_api(url: str) -> str:
-    """Fetch data from the PMS (Property Management System) API.
-    Use when the user asks about contracts, budgets, forecasts, dashboard data, or third party providers.
+    """Fetch data from the Dexter (Property Management System) API.
+    Use when the user asks about contracts, budgets, forecasts, dashboard data, or third party providers. (This section of the code allows you to interface external applications via a RestAPI with your private agent)
 
     Available endpoints:
     - /dashboard — overall dashboard summary
